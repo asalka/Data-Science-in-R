@@ -1,0 +1,114 @@
+---
+title: "In_Class_7"
+author: "Aya Salka"
+date: "November 7, 2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(mosaicData)
+library(nycflights13)
+```
+
+### Question 1: Write a function that can perform hypothesis testing based on bootstrapping method for one population mean and one population median. Make sure your function can return P-value for two sided or one sided tests.
+R code from previous In_class Assignent
+```{r}
+sample_305 <- function(x, reps = 1000, s_size, stats=c("mean", "median", "sd")) {
+  x <- na.omit(x)
+  x <- as.data.frame(x)
+  
+  rep(0,1000) * summarise(sample_n(x, size = s_size, replace = T), 
+                       sampleD = case_when(stats == "mean" ~ mean(x), 
+                                           stats == "median" ~ median(x),
+                                           stats == "sd" ~ sd(x)))
+}
+```
+
+R code for question 1
+```{r}
+hypoth_testing <- function(x, nmean, reps = 1000, p = c("greater", "less", "two"), stats = c("mean", "median"), s_size = length(x), conf_int){
+  x <- na.omit(x)
+  alpha <- (100-conf_int)/100
+  if(stats == "mean"){
+    obsmean <- mean(x)
+    newmean <- x - obsmean + nmean
+    c <- abs(obsmean - nmean)
+    boot_for_mean <- sample_305(newmean, reps, s_size = length(newmean), stats)
+    if(p == "greater"){
+      pval <- (sum(boot_for_mean$sampleD >= nmean + c)/reps)
+      print(pval)
+    }else if(p == "less"){
+      pval <- (sum(boot_for_mean$sampleD <= nmean - c)/reps)
+      print(pval)
+    }else if(p == "two"){
+      pval <- (sum(boot_for_mean$sampleD <= nmean - c) + sum(boot_for_mean$sampleD >= (nmean + c))/reps)
+      print(pval)
+    }else { print("nothing")}
+    
+  }else if(stats == "median"){
+    obsmed <- median(x)
+    c <- abs(obsmed - nmean)
+    newmed <- x - obsmed + nmean
+    boot_for_median <- sample_305(newmed, reps, s_size = length(newmed), stats)
+    if(p == "greater"){
+      pval <- (sum(boot_for_median$sampleD >= nmean + c)/reps)
+      print(pval)
+    }else if(p == "less"){
+      pval <- (sum(boot_for_median$sampleD <= nmean - c)/reps)
+      print(pval)
+    }else if(p == "equal"){
+      pval <- (sum(boot_for_median$sampleD <= nmean - c) + sum(boot_for_median$sampleD >= (nmean + c))/reps)
+      print(pval)
+    }else { print("nothing")}
+  }else { print("nothing")}
+  
+  if(pval < alpha){
+      print("Reject Null Hypothesis")
+    }else{print("Fail to Reject Null Hypothesis")}
+}
+
+```
+
+Note: For questions 2-4, I was unsure of using the function from question one or t.test, I have used both however, please note that the answers I do get are very different therefore, I have based my answer on the result from t.test as I feel the function above is not representative of the actual p value. 
+
+### Question 2: Delta Airlines claims that it's flights outbounding from New York airport have an average departure delay of about 5 minutes. Test the company's claim against that the departure delay is more than 5 minutes using data from Januray as your sample. Use 5% level of significance.
+
+```{r}
+dat <- flights %>% select(carrier, dep_delay, month, origin) %>% filter(carrier == "DL", month == 1, origin == "JFK")
+hypoth_testing(dat$dep_delay, 5, 1000, "greater", "mean", length(dat$dep_delay), 95)
+t.test(dat$dep_delay, alternative = "greater", mu = 5)
+
+```
+
+Here the p value is larger than alpha therefore you would fail to reject the null hypothesis. 
+
+### Question 3: Your friend traveled to Dallas, Texas twice a week during last winter. He always picked American Airlines as his perferred carrier because he claims that AA often arrives earlier than arrival scheduled time. Perform a bootstrap hypothesis testing to check your friend claim. Use 1% level of significance. Perform the hypothesis twice, once using winter flights data and another using summer flights data.
+
+```{r}
+ddt_winter <- flights %>% select(carrier, arr_delay, month, dest) %>% filter(carrier == "AA", dest == "DFW", month %in% c(12,1,2))
+hypoth_testing(ddt_winter$arr_delay, 0, 1000, "less", "mean", s_size = length(ddt_winter$arr_delay), 99)
+
+t.test(ddt_winter$arr_delay, alternative = "less", mu = 0, conf.level = 0.99)
+```
+
+```{r}
+ddt_summer <- flights %>% select(carrier, arr_delay, month) %>% filter(carrier == "AA", month %in% c(6:8), arr_delay < 0)
+hypoth_testing(ddt_summer$arr_delay, 0, 1000, "less", "mean", s_size = length(ddt_summer$arr_delay), 99)
+t.test(ddt_summer$arr_delay, alternative = "less", mu = 0, conf.level = 0.99)
+```
+
+For the winter test the p value is greater than alpha, while for the summer test the p value is much less than alpha, so for the first one we would fail to reject the null hypothesis while for the second test we would reject the null hypothesis. 
+
+### Question 4: Use the Gestation data set from mosaicData package. Test the hypothesis that the median age of non-smoker mothers is 26 against that its less than 26. Use 5% level of significance.
+```{r}
+dr <- Gestation %>% select(gestation, age, smoke) %>% filter(smoke == 0, gestation != "NA")
+hypoth_testing(dr$age, 26, 1000, "less", "mean", s_size = length(dr$age), 95)
+t.test(dr$age, alternative = "less", mu = 26)
+```
+Here the p value is greater than the alpha, therefore we would fail to reject the null hypothesis and conclude that the median age of non smoking mothers is 26. 
