@@ -1,6 +1,6 @@
 ---
 title: "Untitled"
-author: "Hanadi Farhat"
+author: "Hanadi Fahrat, Timothy Lee, Matthew Brown, Diana Paicu, Aya Salka"
 date: "December 16, 2018"
 output: html_document
 ---
