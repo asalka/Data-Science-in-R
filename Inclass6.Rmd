@@ -1,0 +1,107 @@
+---
+title: "In_Class_6"
+author: "Aya Salka"
+date: "November 1, 2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(nycflights13)
+library(mdsr)
+```
+
+### Question 1: 1)	Construct a function that finds the sampling distributions (called "sample_305") of mean, median, and standard deviation. Build the function in a way that it returns the sampling distribution for a specific statistic out of the three mentioned. (i.e.; have an argument that accepts the choice of a statistic, and the function returns only the sampling distribution of this statistic, not for all three, think about other arguments that function would need to make it generic as possible)
+
+```{r}
+sample_305 <- function(data, no_sampl, sampl_size, statistic = c("mean", "median", "std")){
+  data <- na.omit(data)
+  data <- data.frame(data)
+  
+  if(statistic == "mean"){
+    sample_mean <- do(no_sampl)*data %>% sample_n(size = sampl_size, replace = T) %>% summarise(mean = mean(data))
+    print(sample_mean)
+  }
+  else if(statistic == "median"){
+    sample_median <- do(no_sampl)*data %>% sample_n(size = sampl_size, replace = T) %>% summarise(median = median(data))
+    print(sample_median)
+  }
+  else if (statistic == "std"){
+    sample_std <- do(no_sampl)*data %>% sample_n(size = sampl_size, replace = T) %>% summarise(std = sd(data))
+    print(sample_std)
+  }
+}
+```
+### Question 2: Construct a function (named: "confd_305" that would use the sampling distribution function (created in 1) and return the confidence interval for estimating the appropriate population parameter for any level C. 
+
+```{r}
+confd_305 <- function(data, no_sampl, sampl_size, statistic= c("mean", "median", "std"), b){
+  data <- na.omit(data)
+  data <- data.frame(data)
+  
+  if(statistic == "mean"){
+    confidence_sample_mean <- sample_305(data, no_sampl, sampl_size, statistic= c("mean", "median", "std"))
+    confidence_menvalue <- qdata(~mean, p = c((100-b)/2*0.01, (100-b)/2*0.01+(b*0.01)), data = confidence_sample_mean)
+    print(confidence_menvalue)
+  }
+  else if(statistic == "median"){
+    confidence_sample_median <- sample_305(data, no_sampl, sampl_size, statistic= c("mean", "median", "std"))
+    confidence_medvalue <- qdata(~median, p = c((100-b)/2*0.01, (100-b)/2*0.01+(b*0.01)), data = confidence_sample_median)
+    print(confidence_medvalue)
+  }
+  else if (statistic == "std"){
+  confidence_sample_std <- sample_305(data, no_sampl, sampl_size, statistic= c("mean", "median", "std"))
+  confidence_stvalue <- qdata(~std, p = c((100-b)/2*0.01, (100-b)/2*0.01+(b*0.01)), data = confidence_sample_std)
+  print(confidence_stvalue)
+  }
+}
+```
+
+### Question 3: Use both functions created with the diamonds data set. Find the sampling distribution and the (85% and 95%) confidence interval of all three statistics (mean, median, standard deviation) for the price of diamond of "Fair cut," and "Ideal cut." 
+
+```{r}
+a1 <- diamonds %>% select(cut, price) %>% filter(cut == "Ideal")
+a4 <- confd_305(a1$price, 100, 50, "mean", 85)
+wer <- sample_305(a1$price, 100, 50, "mean")
+wert <- sample_305(a1$price, 100, 50, "median")
+werty <- sample_305(a1$price, 100, 50, "std")
+
+a2 <- diamonds %>% select(cut, price) %>% filter(cut == "Fair")
+a5 <- confd_305(a2$price, 100, 50, "mean", 95)
+we <- sample_305(a2$price, 100, 50, "mean")
+wen <- sample_305(a2$price, 100, 50, "median")
+weo <- sample_305(a2$price, 100, 50, "std")
+
+```
+
+
+
+### Question 4: Interpret the sampling distribution first by graphing and five number summaries. Identify differences in sampling distributions between the two cuts (Probably by making a histogram for the distribution of each statistic and discuss the distribution). 
+
+```{r}
+summary(wer)
+ggplot(wer) + geom_histogram(aes(x = mean))
+summary(we)
+ggplot(we) + geom_histogram(aes(x = mean))
+summary(wert)
+ggplot(wert) + geom_histogram(aes(x = median))
+summary(wen)
+ggplot(wen) + geom_histogram(aes(x = median))
+summary(werty)
+ggplot(werty) + geom_histogram(aes(x = std))
+summary(weo)
+ggplot(weo) + geom_histogram(aes(x = std))
+```
+The differences between the two cuts are actually not that extreme if you look at the minimums and maximum's, they are quite similar. However, the median between the two differ extremely. For example, the ideal cut had a median of 1810 while the fair cut had a median of 3282 suggesting that the data for the ideal cut was centered more towards the left while the data for the fair cut was centered more towards the right (or at least just slightly in comparison with the other cut). Note: This is in terms of prices with regards to cut. 
+
+
+
+### Question 5: Interpret the confidence intervals computed in question 3.
+The confidence intervals computed in question 3 were that for the 95% confidence interval, stood for the probability that that confidence interval would contain the true parameter value. Usually confidence intervals deal with percentages in terms of area of the normal density curve. When we took a 95% confidence interval covers, it meant that on the curve it covered 95% which meant that the probability of observing a value outside of this area would be less than 0.05. The outputs that we recieved above, however, represent z where p = 0.025, the value z such that P(Z > z) = 0.025, or P(Z < z) = 0.975, is equal to 1.96. Therefore for 95% there is (-1.96, 1.96). Similarily for the 85%, we observed P(Z > z) = 0.075, or P(Z < z) = 0.925. 
