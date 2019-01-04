@@ -1,0 +1,581 @@
+---
+title: "Untitled"
+author: "Hanadi Farhat"
+date: "December 16, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+
+# Library Used
+
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(haven)
+#library(randomForest)
+```
+
+```{r}
+Data_Household<-read_por("~/STAT305/National Health Interview Survey (2)/National Health Interview Survey/DS0001/04349-0001-Data.por")
+
+Data_Family <- read_por("~/STAT305/National Health Interview Survey (2)/National Health Interview Survey/DS0002/04349-0002-Data.por")
+
+Data_Person <- read_por("~/STAT305/National Health Interview Survey (2)/National Health Interview Survey/DS0003/04349-0003-Data.por")
+
+Data_Sample_Adult <- read_por("~/STAT305/National Health Interview Survey (2)/National Health Interview Survey/DS0004/04349-0004-Data.por")
+```
+
+
+
+###Data_Household  
+#### Rename the variables and create a new data frame "Data_Household_1"
+
+```{r} 
+# Data_Household  
+
+# Rename the Variables
+
+
+HHX<-Data_Household$HHX
+
+Region<-Data_Household$REGION
+
+
+
+```
+
+
+```{r}
+
+# Create a new dataframe
+
+Data_Household_1<-data.frame(HHX,Region)
+```
+
+
+###Data_Family
+####Rename the variables, create a new dataframe Data_Family_1
+
+
+```{r}
+# Data_Family
+
+# Rename the Variables
+
+HHX1<- Data_Family$HHX
+
+Family_no<-Data_Family$FMX
+
+Gov_Assist<-Data_Family$FFDSTYN
+
+```
+
+
+```{r}
+# Create a new dataframe
+
+Data_Family_1<-data.frame(HHX1, Family_no,Gov_Assist)
+```
+
+
+###Join the  2 data sets Data_Household_1 and Data_Family_1 and name the new dataframe "Data_join_1".
+
+
+```{r}
+Data_join_1<-inner_join( Data_Family_1 , Data_Household_1, by = c("HHX1" ="HHX"), Region)
+#Data_join_1
+```
+
+
+##Data_Person
+
+#### We need to rename the variables, re-level Salary, Education, and Limitation, create new data frame, create new variable Poverty_Guid , and finally join the newly formed data with the previous one by HHX as identifier.
+
+```{r}
+
+# Data_Person
+
+# Rename the Variables
+
+HHX2<-Data_Person$HHX
+
+Person_no<- Data_Person$FPX
+
+Family_no_1<-Data_Person$FMX
+
+Sample_Adult<-Data_Person$ASTATFLG
+
+Education<-Data_Person$EDUC1
+
+Sex<-Data_Person$SEX
+
+Age<-Data_Person$AGE_P
+
+Marital_Status<-Data_Person$R_MARITL 
+
+US_Citizen<-Data_Person$CITIZENP
+
+Employed <-Data_Person$WRKLYR1
+
+Salary<-Data_Person$ERNYR_P 
+
+Have_Applied_SSI<-Data_Person$PSSAPL 
+
+WorkersCompens_Unemploy<-Data_Person$PINCOT 
+
+Child_Support<-Data_Person$PCHLDSP 
+
+Stock_Property_Income<-Data_Person$PDIVD 
+
+Interest_Savings<-Data_Person$PINTRSTR 
+
+Receive_SSI<- Data_Person$PSSI 
+
+Retirement_Pension<-Data_Person$POPENS 
+
+Other_Disability_Pension<-Data_Person$PPENS 
+
+Receive_SS<-Data_Person$PSSRR
+
+limitation<-Data_Person$LACHRONR
+
+
+
+```
+
+
+
+```{r}
+# Create a new data set and name it Data_Person_1
+
+Data_Person_1<-data.frame(HHX2,Family_no_1,Person_no,Sample_Adult,Sex,Age,Marital_Status,Education,US_Citizen,Employed, Salary ,Have_Applied_SSI, WorkersCompens_Unemploy, Child_Support, Stock_Property_Income,Interest_Savings, Receive_SSI, Retirement_Pension,Other_Disability_Pension,
+Receive_SS,limitation)
+#Data_Person_1
+```
+
+
+
+
+
+```{r}
+#Re-level the variables
+
+
+#Salary
+
+Data_Person_1$Salary_lvl<-with(Data_Person_1,ifelse(Salary =="1","0-$4999",ifelse(Salary=="2","$5000-$9999",ifelse(Salary=="3","$10000-$14999", ifelse(Salary=="4","$15000-$19999", ifelse(Salary =="5","$20000-$24999",ifelse(Salary=="6","$25000-$34999",ifelse(Salary=="7","$35000-$44999", ifelse(Salary =="8","$45000-$54999",ifelse(Salary=="9","$55000-$64999", ifelse(Salary =="10","$65000-$74999", ifelse(Salary=="11", "$75000 and over","Unknown"))))))))))))
+
+
+# Limitation
+
+Data_Person_1$Limitation_lvl<-with(Data_Person_1, ifelse(limitation =="0","2", "1"))
+
+
+# Education
+
+# Re-level and rename Education
+
+Data_Person_1$Education_lvl<-with(Data_Person_1,ifelse(Education=="0"|Education=="1"|Education=="2"|Education=="3"|Education=="4"|Education=="5"|Education=="6"|Education=="7"|Education=="8"|Education=="9"|Education=="10"|Education=="11"|Education=="12"," Less than 12th grade, no high school diploma",ifelse(Education=="13"|Education=="14","GED recipient/High school graduate",ifelse(Education=="15","Some college, no degree", ifelse(Education=="16"|Education=="17","AA degree", ifelse(Education=="18","BA, BS, AB, BBA",ifelse(Education=="19"|Education=="20","Master's or doctoral",ifelse(Education == "21", "PhD", "Unknown"))))))))
+
+```
+
+
+
+```{r}
+#Create a new variable Poverty_Guid
+
+Data_Person_1$Poverty_Guid<-with(Data_Person_1, ifelse((Salary_lvl=="0-$4999"|Salary_lvl=="$5000-$9999"), "1","2"))
+#Data_Person_1$Poverty_Guid
+#table(Data_Person_1$Poverty_Guid)
+
+```
+
+
+
+```{r}
+# Join Data_join_1 with Data_Person_1 and called it Data_join_2
+
+#Data_join_2<-inner_join(Data_join_1,Data_Person_1 , by = c("HHX1" ="HHX2", "Family_no"="Family_no_1"))
+#Data_join_2%>%select(HHX, Family_no,Person_no, everything())
+
+```
+
+##Data_Sample_Adult
+### First rename the variables, then create a new data frame "Data_Sample_Adult_1". Join by HHX, Family_no, and Person_no the new data with Data_Person_1 to create "Data_join_4" then join it HHX and Family_no with "Data_join_1" to create "Data_join_4".
+
+```{r}
+#Rename Variables 
+
+HHX3<-Data_Sample_Adult$HHX
+
+Person_no_1<- Data_Sample_Adult$FPX
+
+Family_no_2<-Data_Sample_Adult$FMX
+
+Heart_Disease<-Data_Sample_Adult$HRTEV
+
+Asthma<-Data_Sample_Adult$AASMEV
+
+Cancer<-Data_Sample_Adult$CANEV
+
+Diabetes<-Data_Sample_Adult$DIBEV
+
+Sinusitis<-Data_Sample_Adult$SINYR
+
+Chronic_Bronchitis<-Data_Sample_Adult$CBRCHYR
+
+Failing_Kidney<-Data_Sample_Adult$KIDWKYR
+
+Liver<-Data_Sample_Adult$LIVYR
+
+Limited_Arthritis<-Data_Sample_Adult$ARTHLMT
+
+Hearing_Aid<-Data_Sample_Adult$HEARAID
+
+Vision<-Data_Sample_Adult$AVISION
+
+Blind<-Data_Sample_Adult$ABLIND
+
+Special_Equip<-Data_Sample_Adult$SPECEQ
+
+Mental_Retardation<-Data_Sample_Adult$AFLHCA14
+
+Developmental_Problem<-Data_Sample_Adult$AFLHCA15
+
+Memory_Problem<-Data_Sample_Adult$AFLHCA16 
+
+Emotional_Problem<-Data_Sample_Adult$AFLHCA17
+
+Weight_Problem<-Data_Sample_Adult$AFLHCA18 
+
+Missing_limb<-Data_Sample_Adult$AFLHC19_
+
+Connective_tissue_prob<-Data_Sample_Adult$AFLHC20_
+
+Circulation_problem<-Data_Sample_Adult$AFLHC21_
+
+Bengin_Tumor<-Data_Sample_Adult$AFLHC22_
+
+Nervous_System<-Data_Sample_Adult$AFLHC23_
+
+Digestive_problem<-Data_Sample_Adult$AFLHC24_
+
+Gen_problem<-Data_Sample_Adult$AFLHC25_
+
+Skin_problem<-Data_Sample_Adult$AFLHC26_
+
+Blood_problem<-Data_Sample_Adult$AFLHC27_
+
+Parkinson<-Data_Sample_Adult$AFLHC28_
+
+mental_illness<-Data_Sample_Adult$AFLHC30_
+
+Surgical_after_effect<-Data_Sample_Adult$AFLHC31_
+
+Old_age<-Data_Sample_Adult$AFLHC32_
+
+Other_impairment<-Data_Sample_Adult$AFLHCA90
+
+Functional_Limitation<-Data_Sample_Adult$FLA1AR
+
+Alcohol<-Data_Sample_Adult$AFLHC29_
+
+ 
+
+```
+
+
+
+```{r}
+
+# Create a new dataframe
+
+Data_Sample_Adult_1<-data.frame(HHX3,Person_no_1,Family_no_2,Heart_Disease,Asthma,Cancer,Diabetes,Sinusitis,Chronic_Bronchitis,Failing_Kidney,Liver,Limited_Arthritis,Hearing_Aid,Vision,Blind,Special_Equip,Functional_Limitation,Mental_Retardation,Developmental_Problem,Memory_Problem,Emotional_Problem,Weight_Problem,Missing_limb,Connective_tissue_prob,Circulation_problem,Bengin_Tumor,Nervous_System,Digestive_problem,Gen_problem,Skin_problem,Blood_problem,Parkinson,mental_illness,Surgical_after_effect,Old_age,Other_impairment,Alcohol)
+```
+
+
+
+```{r}
+# Join Data_Sample_Adult_1 and Data_Person_1 by HHX, Person_no, and Family_no as identifier
+Data_join_4<-inner_join(Data_Sample_Adult_1,Data_Person_1 , by = c("HHX3" ="HHX2", "Family_no_2"="Family_no_1","Person_no_1"="Person_no"))
+```
+
+
+
+```{r}
+# Join Data_join_4 and Data_join_1 by HHX and Family_no
+Data_join_5<-inner_join(Data_join_4,Data_join_1, by=c("HHX3"="HHX1", "Family_no_2"="Family_no"))
+```
+
+
+
+```{r}
+
+Data_join_filter<-Data_join_5%>%filter(!is.na(US_Citizen),!is.na(Receive_SSI),!is.na(Salary_lvl),!is.na(Functional_Limitation),!is.na(Other_impairment),Region=="2",Sample_Adult=="1")%>%mutate (Any_Disease = ifelse((Asthma=="1"|Cancer=="1"|Diabetes=="1"|Sinusitis=="1"| Chronic_Bronchitis=="1"| Failing_Kidney=="1"|Liver=="1"| Limited_Arthritis=="1"| Hearing_Aid=="1"|Vision=="1"| Blind=="1"| Mental_Retardation=="1"| Developmental_Problem=="1"|Memory_Problem=="1"|  Emotional_Problem=="1" |Weight_Problem=="1"|  Missing_limb=="1"| Connective_tissue_prob=="1"|  Circulation_problem=="1"| Bengin_Tumor=="1"| Nervous_System =="1"| Digestive_problem=="1"| Gen_problem=="1"|Skin_problem=="1"| Blood_problem=="1"| Parkinson=="1"| mental_illness=="1"|Surgical_after_effect=="1"| Old_age=="1"),"1",ifelse((Asthma=="2"|Cancer=="2"|Diabetes=="2"|Sinusitis=="2"| Chronic_Bronchitis=="2"| Failing_Kidney=="2"|Liver=="2"| Limited_Arthritis=="2"| Hearing_Aid=="2"|Vision=="2"| Blind=="2"|  Mental_Retardation=="2"|Developmental_Problem=="2"|Memory_Problem=="2"|  Emotional_Problem=="2"|Weight_Problem=="2"|  Missing_limb=="2"| Connective_tissue_prob=="2"|  Circulation_problem=="2"| Bengin_Tumor=="2"| Nervous_System =="2"| Digestive_problem=="2"| Gen_problem=="2"|Skin_problem=="2"| Blood_problem=="2"| Parkinson=="2"| mental_illness=="2"|Surgical_after_effect=="2"| Old_age=="2"), "2","3" )))#%>%select(Any_Disease,US_Citizen,Receive_SSI,Salary_lvl,Functional_Limitation)
+
+```
+
+
+```{r}
+library(Hmisc)
+table(Data_join_filter$Any_Disease, useNA = "always")
+
+Data_join_filter$Any_disease_1 <- with(Data_join_filter, ifelse(is.na(Any_Disease),"2", "1"))
+table(Data_join_filter$Any_disease_1)
+
+```
+
+
+
+
+```{r}
+tbl_percent<-function(x){
+  
+  tbl<-table(x)
+  res<-cbind(tbl, round(prop.table(tbl)*100,2))
+  colnames(res)<-c('Count','Percentage')
+  res
+}
+
+tbl_percent(Data_join_filter$Cancer)
+```
+
+```{r}
+tbl_percent(Data_join_filter$Alcohol)
+
+```
+
+
+
+
+```{r}
+tbl_percent(Data_join_filter$Asthma)
+
+```
+
+
+```{r}
+tbl_percent(Data_join_filter$Bengin_Tumor)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Blind)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Blood_problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Chronic_Bronchitis)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Circulation_problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Connective_tissue_prob)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Developmental_Problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Diabetes)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Digestive_problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Emotional_Problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Failing_Kidney)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Gen_problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Hearing_Aid)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Heart_Disease)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Limited_Arthritis)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Liver)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Memory_Problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$mental_illness)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Mental_Retardation)
+
+```
+
+
+```{r}
+tbl_percent(Data_join_filter$Missing_limb)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Nervous_System)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Old_age)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Parkinson)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Sinusitis)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Skin_problem)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Surgical_after_effect)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Vision)
+
+```
+
+```{r}
+tbl_percent(Data_join_filter$Weight_Problem)
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+
+```
+
+
+
+
+```{r}
+
+```
+
+
+
+```{r}
+ggplot(Data_join_filter)+geom_bar(aes(as.factor(Asthma), fill=as.factor(Receive_SSI)) )+labs(x="Asthma", y = "count", title="Distribution of Asthma")
+```
+
+
+```{r}
+ggplot(Data_join_filter)+geom_bar(aes(as.factor(Any_Disease)))+labs(x="Asthma", y = "count", title="Distribution of Asthma")
+```
+
+
+
+
+```{r}
+Data_join_4%>%filter( !is.na(Employed), Sample_Adult== "1")%>%ggplot()+geom_bar(aes(as.factor(Employed), fill = as.factor(Sex)))+labs(x="Employed", y = "count", title="Distribution of the Gender of Working Adult")
+# 1 male, 2 femal
+```
+
+```{r}
+Data_join_4%>%filter(!is.na(Salary_lvl))%>%ggplot()+geom_bar(aes(as.factor(Salary_lvl), fill=as.factor(Education_lvl)))+labs(x="Salary", y = "count", title="Distribution of Salary")+facet_wrap(~Employed)+coord_flip()
+```
+
+```{r}
+Data_join_4%>%filter(!is.na(Limited_Arthritis), Limited_Arthritis=="1"|Limited_Arthritis=="2")%>%ggplot()+geom_bar(aes(as.factor(Limited_Arthritis), fill=as.factor(Limitation_lvl)))+labs(x="Arthritis", y = "count", title="Adult diagnosed with Arthritis, receive SSI, and have limitation")+facet_wrap(~Receive_SSI)
+```
+
+
+
+```{r}
+Data_join_5%>%filter(US_Citizen == "1"|US_Citizen=="2", Receive_SSI=="1"|Receive_SSI=="2")%>%ggplot()+ geom_bar(aes(as.factor(US_Citizen),fill = as.factor(Functional_Limitation)))+labs(x="US_Citizen", title="US Citizens receiving SSI and Have Functional Limitation") + facet_wrap(~as.factor(Receive_SSI))
+```
+
